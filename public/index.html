@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        #messages {
+            list-style-type: none;
+            padding: 0;
+        }
+        #messages li {
+            padding: 8px 16px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        .my-message {
+            background-color: #f1f1f1;
+            color: #000;
+        }
+        .other-message {
+            background-color: #d1d1d1;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-md-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Chat Room</div>
+                    <div class="card-body">
+                        <ul id="messages"></ul>
+                    </div>
+                    <div class="card-footer">
+                        <form id="form" action="">
+                            <input id="input" autocomplete="off" class="form-control" placeholder="Type a message..." />
+                            <button class="btn btn-primary mt-2">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        var name = prompt("Enter your name");
+
+        if (!name) {
+            name = "Anonymous";
+        }
+
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+        var messages = document.getElementById('messages');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', { name: name, message: input.value });
+                input.value = '';
+            }
+        });
+
+        socket.on('chat message', function(msg) {
+            var item = document.createElement('li');
+            item.textContent = msg.name + ": " + msg.message;
+            if (msg.name === name) {
+                item.classList.add('my-message');
+            } else {
+                item.classList.add('other-message');
+            }
+            messages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+    </script>
+</body>
+</html>
