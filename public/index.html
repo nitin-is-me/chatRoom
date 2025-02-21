@@ -155,31 +155,31 @@
 
         #reply-preview {
             position: relative;
-        
+
             padding-right: 30px;
-        
+
         }
 
         #cancel-reply {
             position: absolute;
-          
+
             top: 0;
-       
+
             right: 0;
-     
+
             font-size: 1.2rem;
-         
+
             font-weight: bold;
             color: #ff6666;
             cursor: pointer;
             transition: color 0.2s ease;
             padding: 5px;
-          
+
         }
 
         #cancel-reply:hover {
             color: #ff3333;
-           
+
         }
     </style>
 </head>
@@ -221,32 +221,32 @@
         var messages = document.getElementById('messages');
         var cardBody = document.querySelector('.card-body');
         var replyPreview = document.getElementById('reply-preview');
-        var replyingTo = null; 
+        var replyingTo = null;
 
-        
+
         function selectMessage(event) {
             var messageElement = event.target.closest('li');
             if (!messageElement) return;
 
-          
+
             document.querySelectorAll('#messages li').forEach(li => {
                 li.classList.remove('selected');
             });
 
-           
+
             messageElement.classList.add('selected');
             replyingTo = {
                 name: messageElement.dataset.name,
                 message: messageElement.dataset.message
             };
 
-           
+
             var replyText = document.getElementById('reply-text');
             replyText.textContent = `Replying to ${replyingTo.name}: ${replyingTo.message}`;
             replyPreview.style.display = 'block';
         }
 
-    
+
         messages.addEventListener('click', selectMessage);
 
         form.addEventListener('submit', function (e) {
@@ -259,13 +259,49 @@
             var messageData = {
                 name: name,
                 message: input.value,
-                replyTo: replyingTo 
+                replyTo: replyingTo
             };
 
             socket.emit('chat message', messageData);
             input.value = '';
-            replyPreview.style.display = 'none'; 
-            replyingTo = null; 
+            replyPreview.style.display = 'none';
+            replyingTo = null;
+        });
+
+        // Notify the server that the user has joined
+        // Notify the server that the user has joined
+        socket.emit('join', name);
+
+        // Handle "user joined" notifications
+        socket.on('user joined', (message) => {
+            var notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.color = '#cccccc';
+            notification.style.fontSize = '0.9rem';
+            notification.style.textAlign = 'center';
+            notification.style.marginBottom = '10px';
+            document.querySelector('.card-footer').prepend(notification);
+
+            // Remove the notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        });
+
+        // Handle "user left" notifications
+        socket.on('user left', (message) => {
+            var notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.color = '#cccccc';
+            notification.style.fontSize = '0.9rem';
+            notification.style.textAlign = 'center';
+            notification.style.marginBottom = '10px';
+            document.querySelector('.card-footer').prepend(notification);
+
+            // Remove the notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         });
 
         socket.on('chat message', function (msg) {
@@ -280,7 +316,7 @@
                 item.classList.add('other-message');
             }
 
-    
+
             if (msg.replyTo) {
                 var replyElement = document.createElement('div');
                 replyElement.classList.add('reply-message');
@@ -297,10 +333,10 @@
         var cancelReply = document.getElementById('cancel-reply');
 
         cancelReply.addEventListener('click', function () {
-            replyingTo = null; 
-            replyPreview.style.display = 'none'; 
+            replyingTo = null;
+            replyPreview.style.display = 'none';
             document.querySelectorAll('#messages li').forEach(li => {
-                li.classList.remove('selected'); 
+                li.classList.remove('selected');
             });
         });
 
