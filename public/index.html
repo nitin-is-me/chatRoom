@@ -77,24 +77,26 @@
             transition: background-color 0.2s ease;
         }
 
-        #messages li:hover {
-            background-color: #3a3a3a;
-        }
 
-        #messages li.selected {
-            background-color: #4a4a4a;
-        }
 
         .my-message {
-            background-color: #006400;
+            background-color: #0f52ba;
             color: #ffffff;
             margin-left: auto;
         }
 
         .other-message {
-            background-color: #4a4a4a;
+            background-color: #3b3b3b;
             color: #ffffff;
             margin-right: auto;
+        }
+
+        .my-message:hover {
+            background-color: #0078ff;
+        }
+
+        .other-message:hover {
+            background-color: #6969698e;
         }
 
         .reply-message {
@@ -210,10 +212,11 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var socket = io();
-        var name = prompt("Enter your name");
+
+        var name = prompt("Enter your name").trim();
 
         if (!name) {
-            name = "Ajnabi";
+            name = "Anonymous";
         }
 
         var form = document.getElementById('form');
@@ -225,6 +228,9 @@
 
 
         function selectMessage(event) {
+
+            input.focus();
+
             var messageElement = event.target.closest('li');
             if (!messageElement) return;
 
@@ -251,6 +257,9 @@
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
+
+            input.focus();
+
             if (input.value.trim() === "") {
                 alert("Why are you sending empty texts? Do I look fool enough to send this shit?");
                 return;
@@ -269,8 +278,12 @@
         });
 
         // Notify the server that the user has joined
-        // Notify the server that the user has joined
         socket.emit('join', name);
+
+        socket.on('name taken', (name) => {
+            alert(`The name "${name}" is already taken. Please choose a different name.`);
+            location.reload(); // Refresh the page
+        });
 
         // Handle "user joined" notifications
         socket.on('user joined', (message) => {
@@ -328,6 +341,12 @@
 
 
             cardBody.scrollTop = cardBody.scrollHeight;
+        });
+
+        // Handle "server shutdown" event
+        socket.on('server shutdown', (message) => {
+            alert(message);
+            window.location.href="/";
         });
 
         var cancelReply = document.getElementById('cancel-reply');
