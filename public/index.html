@@ -320,7 +320,7 @@
         // Handle "kicked" event
         socket.on('kicked', (message) => {
             alert(message);
-            window.location.href = '/'; // Redirect to the home page or another page
+            window.location.href = '/warning'; // Redirect to the home page or another page
         });
 
         socket.on('chat message', function (msg) {

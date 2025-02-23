@@ -91,6 +91,10 @@ app.post('/kick', (req, res) => {
     }
 });
 
+app.get("/warning", (req, res)=>{
+    res.send("Don't do stuffs which land you out of the room. You've been warned");
+})
+
 process.on('SIGINT', () => {
     console.log('Server is shutting down...');
     io.emit('server shutdown', 'Admin has shut down the server');
