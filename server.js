@@ -1,18 +1,12 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const path = require('path');
-const axios = require('axios');
+const path = require('path');;
 const dotenv = require('dotenv');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 dotenv.config();
-
-async function getIp() {
-    const response = await axios.get('https://api.ipify.org/?format=json');
-    return response.data.ip;
-}
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -20,17 +14,24 @@ app.use(express.json());
 const connectedUsers = new Map();
 
 io.on('connection', (socket) => {
-    socket.on('join', async (name) => {
+    socket.on('join', async (data) => {
+        const { name, ip } = data;
+
+        // Check if the name is already taken
         if (connectedUsers.has(name)) {
             socket.emit('name taken', name);
             return;
         }
 
-        const ip = await getIp();
-        console.log(`${name} has joined. IP address: ${ip}`);
+        // Log the user's name and IP address
+        console.log(`${name} has joined with IP: ${ip}. Time: ${new Date().toLocaleTimeString()}`);
 
-        connectedUsers.set(name, socket.id);
+        // Store the user in the connectedUsers map with their name and IP
+        connectedUsers.set(name, { socketId: socket.id, ip });
+
         socket.username = name;
+        socket.ip = ip;  // Store the user's IP in the socket object
+
         io.emit('user joined', `${name} joined the room`);
     });
 
@@ -40,11 +41,10 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', async () => {
         if (socket.username) {
-            const ip = await getIp();
             if (socket.kicked) {
-                console.log(`${socket.username} has been kicked. IP address: ${ip}`);
+                console.log(`${socket.username} has been kicked. Time: ${new Date().toLocaleTimeString()}`);
             } else {
-                console.log(`${socket.username} has left. IP address: ${ip}`);
+                console.log(`${socket.username} has left. Time: ${new Date().toLocaleTimeString()}`);
                 connectedUsers.delete(socket.username);
                 io.emit('user left', `${socket.username} left the room`);
             }
@@ -62,10 +62,12 @@ app.post('/kick', (req, res) => {
     }
 
     // Check if the user exists
-    const socketId = connectedUsers.get(username);
-    if (!socketId) {
+    const userData = connectedUsers.get(username); // Get the user data object
+    if (!userData) {
         return res.status(404).send('User not found');
     }
+
+    const socketId = userData.socketId; // Extract the socketId from the user data
 
     // Kick the user
     const socketToKick = io.sockets.sockets.get(socketId);

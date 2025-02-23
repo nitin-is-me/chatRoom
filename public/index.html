@@ -213,11 +213,32 @@
     <script>
         var socket = io();
 
-        var name = prompt("Enter your name").trim();
+        async function getUserIp() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.error("Error fetching IP:", error);
+                return null;
+            }
+        }
 
+        // Prompt the user for their name and get their IP
+        var name = prompt("Enter your name").trim();
         if (!name) {
             name = "Anonymous";
         }
+
+        getUserIp().then(userIp => {
+            if (userIp) {
+                // Send both the user's name and IP to the server when they join
+                socket.emit('join', { name: name, ip: userIp });
+            } else {
+                // Handle IP fetch failure, just join without IP
+                socket.emit('join', { name: name });
+            }
+        });
 
         var form = document.getElementById('form');
         var input = document.getElementById('input');
@@ -278,7 +299,7 @@
         });
 
         // Notify the server that the user has joined
-        socket.emit('join', name);
+        // socket.emit('join', name);
 
         socket.on('name taken', (name) => {
             alert(`The name "${name}" is already taken. Please choose a different name.`);
