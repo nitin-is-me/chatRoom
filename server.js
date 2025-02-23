@@ -2,75 +2,101 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const axios = require("axios");
+const axios = require('axios');
+const dotenv = require('dotenv');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+dotenv.config();
 
-async function getIp(){
-    const response = await axios.get("https://api.ipify.org/?format=json");
+async function getIp() {
+    const response = await axios.get('https://api.ipify.org/?format=json');
     return response.data.ip;
 }
 
-// Middleware to log requests, alternative to morgan
-// app.use((req, res, next) => {
-//     console.log(`${req.method} ${req.url}`);
-//     next();
-// });
-
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-// Store connected users
-const connectedUsers = new Set();
+const connectedUsers = new Map();
 
 io.on('connection', (socket) => {
-    // console.log('a user connected');
-
-    // Notify all users when someone joins
     socket.on('join', async (name) => {
         if (connectedUsers.has(name)) {
-            // Notify the client that the name is already taken
             socket.emit('name taken', name);
             return;
         }
 
-        // finding ip address of user
         const ip = await getIp();
         console.log(`${name} has joined. IP address: ${ip}`);
 
-        // Add the user to the list of connected users
-        connectedUsers.add(name);
-        socket.username = name; // Store the username in the socket object
+        connectedUsers.set(name, socket.id);
+        socket.username = name;
         io.emit('user joined', `${name} joined the room`);
     });
 
-    // Handle chat messages
     socket.on('chat message', (msg) => {
         io.emit('chat message', msg);
     });
 
-    // Notify all users when someone leaves
     socket.on('disconnect', async () => {
-        // console.log('a user disconnected');
-        const ip = await getIp();
-        console.log(`${socket.username} has left. IP address: ${ip}`);
         if (socket.username) {
-            connectedUsers.delete(socket.username); // Remove the user from the list
-            io.emit('user left', `${socket.username} left the room`);
+            const ip = await getIp();
+            if (socket.kicked) {
+                console.log(`${socket.username} has been kicked. IP address: ${ip}`);
+            } else {
+                console.log(`${socket.username} has left. IP address: ${ip}`);
+                connectedUsers.delete(socket.username);
+                io.emit('user left', `${socket.username} left the room`);
+            }
         }
     });
 });
 
+// Kick user route
+app.post('/kick', (req, res) => {
+    const { username, password } = req.body;
+
+    // Check if the password is correct
+    if (password !== process.env.password) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    // Check if the user exists
+    const socketId = connectedUsers.get(username);
+    if (!socketId) {
+        return res.status(404).send('User not found');
+    }
+
+    // Kick the user
+    const socketToKick = io.sockets.sockets.get(socketId);
+    if (socketToKick) {
+        // Mark the user as kicked
+        socketToKick.kicked = true;
+
+        // Notify the kicked user
+        socketToKick.emit('kicked', 'You have been kicked from the room.');
+
+        // Notify all other users
+        io.emit('user left', `${username} has been kicked from the room.`);
+
+        // Forcefully disconnect the user
+        socketToKick.disconnect(true);
+
+        // Remove the user from the connectedUsers map
+        connectedUsers.delete(username);
+
+        return res.status(200).send(`User ${username} has been kicked.`);
+    } else {
+        return res.status(404).send('User not found');
+    }
+});
+
 process.on('SIGINT', () => {
     console.log('Server is shutting down...');
-
-    // Notify all clients that the server is shutting down
     io.emit('server shutdown', 'Admin has shut down the server');
-
-    // Close the server
     server.close(() => {
         console.log('Server has been shut down.');
-        process.exit(0); // Exit the process (0 means without errors)
+        process.exit(0);
     });
 });
 

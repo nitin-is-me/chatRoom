@@ -317,6 +317,12 @@
             }, 3000);
         });
 
+        // Handle "kicked" event
+        socket.on('kicked', (message) => {
+            alert(message);
+            window.location.href = '/'; // Redirect to the home page or another page
+        });
+
         socket.on('chat message', function (msg) {
             var item = document.createElement('li');
             item.textContent = msg.name + ": " + msg.message;
@@ -346,7 +352,7 @@
         // Handle "server shutdown" event
         socket.on('server shutdown', (message) => {
             alert(message);
-            window.location.href="/";
+            window.location.href = "/";
         });
 
         var cancelReply = document.getElementById('cancel-reply');
