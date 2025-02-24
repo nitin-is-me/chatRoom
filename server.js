@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const path = require('path');;
+const path = require('path');
 const dotenv = require('dotenv');
 const app = express();
 const server = http.createServer(app);
@@ -12,10 +12,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 const connectedUsers = new Map();
+const blockedIPs = new Set(); // Set to store banned IPs
 
 io.on('connection', (socket) => {
     socket.on('join', async (data) => {
         const { name, ip } = data;
+
+        // Check if the IP is banned
+        if (blockedIPs.has(ip)) {
+            socket.emit('banned', 'You are banned from the server.');
+            socket.disconnect(true); // Forcefully disconnect the banned user
+            return;
+        }
 
         // Check if the name is already taken
         if (connectedUsers.has(name)) {
@@ -68,6 +76,7 @@ app.post('/kick', (req, res) => {
     }
 
     const socketId = userData.socketId; // Extract the socketId from the user data
+    const userIp = userData.ip; // Extract the IP from the user data
 
     // Kick the user
     const socketToKick = io.sockets.sockets.get(socketId);
@@ -75,11 +84,15 @@ app.post('/kick', (req, res) => {
         // Mark the user as kicked
         socketToKick.kicked = true;
 
+        // Add the user's IP to the blockedIPs Set
+        blockedIPs.add(userIp);
+        console.log(`IP ${userIp} has been banned.`);
+
         // Notify the kicked user
-        socketToKick.emit('kicked', 'You have been kicked from the room.');
+        socketToKick.emit('kicked', 'You have been kicked and banned from the room.');
 
         // Notify all other users
-        io.emit('user left', `${username} has been kicked from the room.`);
+        io.emit('user left', `${username} has been kicked and banned from the room.`);
 
         // Forcefully disconnect the user
         socketToKick.disconnect(true);
@@ -87,15 +100,15 @@ app.post('/kick', (req, res) => {
         // Remove the user from the connectedUsers map
         connectedUsers.delete(username);
 
-        return res.status(200).send(`User ${username} has been kicked.`);
+        return res.status(200).send(`User ${username} has been kicked and banned.`);
     } else {
         return res.status(404).send('User not found');
     }
 });
 
-app.get("/warning", (req, res)=>{
+app.get("/warning", (req, res) => {
     res.send("Don't do stuffs which land you out of the room. You've been warned");
-})
+});
 
 process.on('SIGINT', () => {
     console.log('Server is shutting down...');

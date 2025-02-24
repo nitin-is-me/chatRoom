@@ -240,6 +240,13 @@
             }
         });
 
+
+        // if user is banned, then don't let him enter the website
+        socket.on('banned', (message) => {
+            alert(message);
+            window.location.href = '/warning'; // Redirect to the warning page
+        });
+
         var form = document.getElementById('form');
         var input = document.getElementById('input');
         var messages = document.getElementById('messages');
