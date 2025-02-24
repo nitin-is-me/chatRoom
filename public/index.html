@@ -209,15 +209,15 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var socket = io();
 
         async function getUserIp() {
             try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
+                const response = await axios.get('https://api.ipify.org?format=json');
+                return response.data.ip;
             } catch (error) {
                 console.error("Error fetching IP:", error);
                 return null;

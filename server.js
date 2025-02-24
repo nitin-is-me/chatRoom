@@ -20,7 +20,7 @@ io.on('connection', (socket) => {
 
         // Check if the IP is banned
         if (blockedIPs.has(ip)) {
-            socket.emit('banned', 'You are banned from the server.');
+            socket.emit('banned', "You can't rejoin because you're already banned from the room.");
             socket.disconnect(true); // Forcefully disconnect the banned user
             return;
         }
@@ -50,7 +50,8 @@ io.on('connection', (socket) => {
     socket.on('disconnect', async () => {
         if (socket.username) {
             if (socket.kicked) {
-                console.log(`${socket.username} has been kicked. Time: ${new Date().toLocaleTimeString()}`);
+                // already logging in "/kick" api
+                // console.log(`${socket.username} has been kicked. Time: ${new Date().toLocaleTimeString()}`);
             } else {
                 console.log(`${socket.username} has left. Time: ${new Date().toLocaleTimeString()}`);
                 connectedUsers.delete(socket.username);
@@ -86,13 +87,13 @@ app.post('/kick', (req, res) => {
 
         // Add the user's IP to the blockedIPs Set
         blockedIPs.add(userIp);
-        console.log(`IP ${userIp} has been banned.`);
+        console.log(`${username} has been banned. Time: ${new Date().toLocaleTimeString()}`);
 
         // Notify the kicked user
-        socketToKick.emit('kicked', 'You have been kicked and banned from the room.');
+        socketToKick.emit('kicked', 'You have been banned from the room.');
 
         // Notify all other users
-        io.emit('user left', `${username} has been kicked and banned from the room.`);
+        io.emit('user left', `${username} has been banned from the room.`);
 
         // Forcefully disconnect the user
         socketToKick.disconnect(true);
@@ -100,7 +101,7 @@ app.post('/kick', (req, res) => {
         // Remove the user from the connectedUsers map
         connectedUsers.delete(username);
 
-        return res.status(200).send(`User ${username} has been kicked and banned.`);
+        return res.status(200).send(`User ${username} has been banned.`);
     } else {
         return res.status(404).send('User not found');
     }
