@@ -28,6 +28,7 @@ io.on('connection', (socket) => {
         // Check if the name is already taken
         if (connectedUsers.has(name)) {
             socket.emit('name taken', name);
+            socket.disconnect(true);
             return;
         }
 
@@ -40,6 +41,7 @@ io.on('connection', (socket) => {
         socket.username = name;
         socket.ip = ip;  // Store the user's IP in the socket object
 
+        socket.emit('join success'); // let user interact after all checks
         io.emit('user joined', `${name} joined the room`);
     });
 

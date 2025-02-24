@@ -183,11 +183,32 @@
             color: #ff3333;
 
         }
+
+         /* Loading spinner styles */
+         #loading-spinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
+
+     <!-- Loading spinner -->
+     <div id="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container hidden" id="chat-room">
         <div class="row justify-content-md-center">
             <div class="col-md-6">
                 <div class="card">
@@ -201,8 +222,8 @@
                                 <span id="reply-text"></span>
                                 <span id="cancel-reply" style="cursor: pointer; color: #ff6666;">&times;</span>
                             </div>
-                            <input id="input" autocomplete="off" class="form-control" placeholder="Type a message..." />
-                            <button class="btn btn-primary mt-2">Send</button>
+                            <input id="input" autocomplete="off" class="form-control" placeholder="Type a message..."/>
+                            <button class="btn btn-primary mt-2" disabled>Send</button>
                         </form>
                     </div>
                 </div>
@@ -230,6 +251,10 @@
             name = "Anonymous";
         }
 
+        const input = document.getElementById('input');
+        const sendButton = document.getElementById('form').querySelector('button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const chatRoom = document.getElementById('chat-room');
         getUserIp().then(userIp => {
             if (userIp) {
                 // Send both the user's name and IP to the server when they join
@@ -240,6 +265,21 @@
             }
         });
 
+        socket.on('join success', () => {
+            // Hide the loading spinner and show the chat room
+            loadingSpinner.classList.add('hidden');
+            chatRoom.classList.remove('hidden');
+
+            // Enable chat input and button
+            input.disabled = false;
+            sendButton.disabled = false;
+        });
+
+        socket.on('name taken', (name) => {
+            alert(`The name "${name}" is already taken. Please choose a different name.`);
+            location.reload(); // Refresh the page
+        });
+
 
         // if user is banned, then don't let him enter the website
         socket.on('banned', (message) => {
@@ -248,7 +288,6 @@
         });
 
         var form = document.getElementById('form');
-        var input = document.getElementById('input');
         var messages = document.getElementById('messages');
         var cardBody = document.querySelector('.card-body');
         var replyPreview = document.getElementById('reply-preview');
@@ -307,11 +346,6 @@
 
         // Notify the server that the user has joined
         // socket.emit('join', name);
-
-        socket.on('name taken', (name) => {
-            alert(`The name "${name}" is already taken. Please choose a different name.`);
-            location.reload(); // Refresh the page
-        });
 
         // Handle "user joined" notifications
         socket.on('user joined', (message) => {
