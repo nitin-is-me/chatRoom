@@ -46,6 +46,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('chat message', (msg) => {
+        if(!connectedUsers.has(socket.username)){
+            socket.emit('force refresh', "You were disconnected because of your network interruption, make sure background data is on if you're multitasking. Refreshing...");
+            return;
+        }
         io.emit('chat message', msg);
     });
 
@@ -61,7 +65,25 @@ io.on('connection', (socket) => {
             }
         }
     });
+
+    // socket.on('reconnect', () => {
+    //     if (socket.username) {
+    //         console.log(`${socket.username} has reconnected. New socket ID: ${socket.id}`);
+
+    //         // Update the connectedUsers map with the new socket ID
+    //         connectedUsers.set(socket.username, { socketId: socket.id, ip: socket.ip });
+
+    //         // Notify other users
+    //         io.emit('user rejoined', `${socket.username} has reconnected.`);
+    //     }
+    // });
 });
+
+app.get('/getUsers', (req, res)=>{
+    console.log(connectedUsers);
+    res.send("Logged all users in server shell");
+    return;
+})
 
 // Kick user route
 app.post('/kick', (req, res) => {
@@ -109,8 +131,8 @@ app.post('/kick', (req, res) => {
     }
 });
 
-app.get("/warning", (req, res) => {
-    res.send("Don't do stuffs which land you out of the room. You've been warned");
+app.get('/warning', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'warning.html'));
 });
 
 process.on('SIGINT', () => {
