@@ -214,7 +214,9 @@
         <div class="row justify-content-md-center">
             <div class="col-md-6">
                 <div class="card">
-                    <div class="card-header">Chat Room</div>
+                    <div class="card-header">
+                        Chat Room <span id="online-count">(0 online)</span>
+                    </div>
                     <div class="card-body">
                         <ul id="messages"></ul>
                     </div>
@@ -353,6 +355,12 @@
         });
 
 
+
+        // Listen for updates to the online user count
+        socket.on('update user count', (count) => {
+            const onlineCountElement = document.getElementById('online-count');
+            onlineCountElement.textContent = `(${count} online)`;
+        });
         // Handle "user joined" notifications
         socket.on('user joined', (message) => {
             pingSound.play();

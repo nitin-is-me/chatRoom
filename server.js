@@ -43,6 +43,9 @@ io.on('connection', (socket) => {
 
         socket.emit('join success'); // let user interact after all checks
         io.emit('user joined', `${name} joined the room`);
+
+         // Emit the updated online user count to all clients
+         io.emit('update user count', connectedUsers.size);
     });
 
     socket.on('chat message', (msg) => {
@@ -62,6 +65,9 @@ io.on('connection', (socket) => {
                 console.log(`${socket.username} has left. Time: ${new Date().toLocaleTimeString()}`);
                 connectedUsers.delete(socket.username);
                 io.emit('user left', `${socket.username} left the room`);
+
+                // Emit the updated online user count to all clients
+                io.emit('update user count', connectedUsers.size);
             }
         }
     });
